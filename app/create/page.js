@@ -93,6 +93,26 @@ export default function CreatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pendingTx, setPendingTx] = useState(null);
+  const [recipientHistory, setRecipientHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab_recipient_history') || '[]');
+      setRecipientHistory(saved);
+    } catch {}
+  }, []);
+
+  function saveRecipient(addr) {
+    try {
+      const list = JSON.parse(localStorage.getItem('lab_recipient_history') || '[]');
+      const filtered = list.filter(a => a.toLowerCase() !== addr.toLowerCase());
+      filtered.unshift(addr);
+      const trimmed = filtered.slice(0, 8);
+      localStorage.setItem('lab_recipient_history', JSON.stringify(trimmed));
+      setRecipientHistory(trimmed);
+    } catch {}
+  }
 
   // Native ETH balance
   const { data: nativeBalance } = useBalance({ address });
@@ -226,6 +246,7 @@ export default function CreatePage() {
   useEffect(() => {
     if (txConfirmed && receipt) {
       setLoading(false);
+      saveRecipient(recipient);
       router.push('/locks?tab=created');
     }
   }, [txConfirmed, receipt, router]);
@@ -275,8 +296,43 @@ export default function CreatePage() {
       {/* SECTION 03 — RECIPIENT */}
       <Section num="03" title="RECIPIENT">
         <Label>Recipient wallet:</Label>
-        <input style={S.input} placeholder="0x..." value={recipient}
-          onChange={e => setRecipient(e.target.value)} />
+        <div style={{position: 'relative'}}>
+          <div style={S.inputRow}>
+            <input style={{...S.input, flex: 1}} placeholder="0x..." value={recipient}
+              onChange={e => setRecipient(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 200)} />
+            {recipientHistory.length > 0 && (
+              <button type="button" style={S.historyBtn}
+                onMouseDown={e => { e.preventDefault(); setShowHistory(s => !s); }}>
+                [HIST]
+              </button>
+            )}
+          </div>
+          {showHistory && recipientHistory.length > 0 && (
+            <div style={S.historyDropdown}>
+              {recipientHistory.map((addr, i) => (
+                <div key={i} style={S.historyItem}
+                  onMouseDown={e => {
+                    e.preventDefault();
+                    setRecipient(addr);
+                    setShowHistory(false);
+                  }}>
+                  <span style={{color: '#00ff88', fontSize: 11}}>[{i+1}]</span>
+                  <span style={{flex: 1, fontSize: 11}}>{addr.slice(0,10)}...{addr.slice(-8)}</span>
+                  <button type="button" style={S.historyRemove}
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const filtered = recipientHistory.filter(a => a !== addr);
+                      localStorage.setItem('lab_recipient_history', JSON.stringify(filtered));
+                      setRecipientHistory(filtered);
+                    }}>[X]</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {recipient && !isAddress(recipient) && (
           <div style={S.errText}>! INVALID_ADDRESS</div>
         )}
@@ -523,5 +579,49 @@ const S = {
     fontFamily: 'inherit',
     cursor: 'pointer',
     letterSpacing: '0.04em',
+  },
+  historyBtn: {
+    background: 'transparent',
+    border: `1px solid ${COLORS.border}`,
+    color: COLORS.fg,
+    padding: '6px 10px',
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    letterSpacing: '0.04em',
+    flexShrink: 0,
+  },
+  historyDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    background: COLORS.bg,
+    border: `1px solid ${COLORS.border}`,
+    marginTop: 4,
+    zIndex: 10,
+    maxHeight: 240,
+    overflowY: 'auto',
+  },
+  historyItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 10px',
+    fontFamily: 'inherit',
+    color: COLORS.fg,
+    cursor: 'pointer',
+    borderBottom: `1px dashed ${COLORS.fgMute}`,
+  },
+  historyRemove: {
+    background: 'transparent',
+    border: 'none',
+    color: COLORS.err,
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    padding: 2,
   },
 };
