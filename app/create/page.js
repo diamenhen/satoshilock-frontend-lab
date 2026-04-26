@@ -82,10 +82,10 @@ export default function CreatePage() {
   const [cliffTime, setCliffTime] = useState(getNowTime());
   const [cliffAmount, setCliffAmount] = useState('0');
   const [durValue, setDurValue] = useState('1');
-  const [durUnit, setDurUnit] = useState(2592000);
+  const [durUnit, setDurUnit] = useState(60);
   // freq removed - defaults to duration (1 step)
-  const [cancelAuth, setCancelAuth] = useState(AUTH.CREATOR);
-  const [updateAuth, setUpdateAuth] = useState(AUTH.CREATOR);
+  const [cancelAuth, setCancelAuth] = useState(AUTH.NONE);
+  const [updateAuth, setUpdateAuth] = useState(AUTH.NONE);
 
   const [isNative, setIsNative] = useState(true);
   const [tokenSymbol, setTokenSymbol] = useState('ETH');
