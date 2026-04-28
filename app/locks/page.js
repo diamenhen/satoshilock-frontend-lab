@@ -269,7 +269,12 @@ function LocksInner() {
             const aDone = BigInt(a.lock.withdrawnAmount) >= BigInt(a.lock.totalAmount);
             const bDone = BigInt(b.lock.withdrawnAmount) >= BigInt(b.lock.totalAmount);
             if (aDone !== bDone) return aDone ? 1 : -1;
-            return Number(b.lock.startTime) - Number(a.lock.startTime);
+            // Non-ETH tokens first, ETH at the bottom
+            const aIsEth = isEthLock(a.lock);
+            const bIsEth = isEthLock(b.lock);
+            if (aIsEth !== bIsEth) return aIsEth ? 1 : -1;
+            // Same type: ascending by endTime (closest to end first)
+            return Number(a.lock.endTime) - Number(b.lock.endTime);
           }).map((entry, i) => (
             <LockCard
               key={entry.id}
